@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blind Vision Assistant - AI Capstone Project 2025</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Header -->
+                <div class="text-center mb-5">
+                    <h1 class="display-4 fw-bold text-primary mb-3">
+                        <i class="fas fa-eye me-3"></i>Blind Vision Assistant
+                    </h1>
+                    <p class="lead text-muted mb-2">AI-powered image description for visually impaired users</p>
+                    <p class="text-muted">CBSE AI Capstone Project 2025</p>
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Upload an image to get an AI-generated description and audio narration
+                    </div>
+                </div>
+
+                <!-- Upload Card -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-cloud-upload-alt me-2"></i>Upload Image</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="uploadForm" enctype="multipart/form-data">
+                            <div class="upload-area mb-3" id="uploadArea">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <h5>Drag & Drop or Click to Upload</h5>
+                                <p class="text-muted">Supported formats: JPG, PNG, JPEG, GIF, WEBP</p>
+                                <p class="text-muted small">Max file size: 16MB</p>
+                                <input type="file" name="image" id="imageInput" 
+                                       class="form-control d-none" accept="image/*" required>
+                                <button type="button" class="btn btn-outline-primary mt-2" onclick="document.getElementById('imageInput').click()">
+                                    <i class="fas fa-folder-open me-2"></i>Choose File
+                                </button>
+                            </div>
+                            <div id="fileInfo" class="d-none">
+                                <p><strong>Selected file:</strong> <span id="fileName"></span></p>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn">
+                                <i class="fas fa-eye me-2"></i>Describe Image
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="loading" class="loading text-center py-4 d-none">
+                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 fs-5">Processing image and generating description...</p>
+                    <p class="text-muted">This may take a few moments</p>
+                </div>
+
+                <!-- Error Alert -->
+                <div id="errorAlert" class="alert alert-danger d-none" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultSection" class="d-none">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-comment-alt me-2"></i>Image Description</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>AI Description:</strong>
+                            </div>
+                            <p id="description" class="lead mb-4 p-3 bg-light rounded"></p>
+                            
+                            <div class="row mt-4">
+                                <div class="col-md-6 mb-3">
+                                    <h6><i class="fas fa-image me-2"></i>Uploaded Image</h6>
+                                    <div class="image-container">
+                                        <img id="resultImage" class="img-fluid rounded shadow-sm" alt="Processed image description">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-volume-up me-2"></i>Audio Description</h6>
+                                    <div class="audio-container p-3 bg-light rounded">
+                                        <audio id="audioPlayer" controls class="w-100 mb-3">
+                                            Your browser does not support the audio element.
+                                        </audio>
+                                        <a id="downloadLink" class="btn btn-success w-100">
+                                            <i class="fas fa-download me-2"></i>Download Audio
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button id="newImageBtn" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-plus me-2"></i>Process New Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Blind Vision Assistant</h5>
+                    <p class="mb-0">AI Capstone Project 2025</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">
+                        Built with <i class="fas fa-heart text-danger"></i> using 
+                        Flask, Ollama, and Edge-TTS
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const uploadForm = document.getElementById('uploadForm');
+        const imageInput = document.getElementById('imageInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const loading = document.getElementById('loading');
+        const errorAlert = document.getElementById('errorAlert');
+        const errorMessage = document.getElementById('errorMessage');
+        const resultSection = document.getElementById('resultSection');
+        const description = document.getElementById('description');
+        const resultImage = document.getElementById('resultImage');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const downloadLink = document.getElementById('downloadLink');
+        const newImageBtn = document.getElementById('newImageBtn');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // File input change handler
+        imageInput.addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                fileName.textContent = file.name;
+                fileInfo.classList.remove('d-none');
+                
+                // Validate file size (16MB)
+                if (file.size > 16 * 1024 * 1024) {
+                    showError('File size exceeds 16MB limit. Please choose a smaller file.');
+                    this.value = '';
+                    fileInfo.classList.add('d-none');
+                }
+            }
+        });
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('upload-area-dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('upload-area-dragover');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('upload-area-dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                imageInput.files = files;
+                fileName.textContent = files[0].name;
+                fileInfo.classList.remove('d-none');
+                
+                // Validate file size
+                if (files[0].size > 16 * 1024 * 1024) {
+                    showError('File size exceeds 16MB limit. Please choose a smaller file.');
+                    imageInput.value = '';
+                    fileInfo.classList.add('d-none');
+                }
+            }
+        });
+
+        // Click upload area to trigger file input
+        uploadArea.addEventListener('click', function() {
+            imageInput.click();
+        });
+
+        // Form submission
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!imageInput.files.length) {
+                showError('Please select an image file.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', imageInput.files[0]);
+
+            // Show loading, hide other sections
+            loading.classList.remove('d-none');
+            uploadForm.style.display = 'none';
+            errorAlert.classList.add('d-none');
+            resultSection.classList.add('d-none');
+
+            try {
+                const response = await fetch('/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Extract results from response
+                    const resultDesc = doc.querySelector('#description')?.textContent;
+                    const resultImg = doc.querySelector('#resultImage')?.src;
+                    const audioSrc = doc.querySelector('#audioPlayer source')?.src || 
+                                   doc.querySelector('#audioPlayer')?.src;
+
+                    if (resultDesc && resultImg) {
+                        description.textContent = resultDesc;
+                        resultImage.src = resultImg;
+                        
+                        if (audioSrc) {
+                            audioPlayer.src = audioSrc;
+                            downloadLink.href = audioSrc;
+                            downloadLink.download = 'description_' + new Date().getTime() + '.mp3';
+                        }
+
+                        loading.classList.add('d-none');
+                        resultSection.classList.remove('d-none');
+                    } else {
+                        throw new Error('Invalid response from server');
+                    }
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Server error: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message || 'Error processing image. Please try again.');
+                loading.classList.add('d-none');
+                uploadForm.style.display = 'block';
+            }
+        });
+
+        // New image button
+        newImageBtn.addEventListener('click', function() {
+            location.reload();
+        });
+
+        // Utility functions
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorAlert.classList.remove('d-none');
+        }
+
+        function hideError() {
+            errorAlert.classList.add('d-none');
+        }
+
+        // API endpoint for potential future use
+        async function apiDescribe(imageFile) {
+            const formData = new FormData();
+            formData.append('image', imageFile);
+
+            const response = await fetch('/api/describe', {
+                method: 'POST',
+                body: formData
+            });
+
+            return await response.json();
+        }
+    </script>
+</body>
+</html>
